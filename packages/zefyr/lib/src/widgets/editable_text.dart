@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:notus/notus.dart';
 
@@ -88,8 +89,7 @@ class ZefyrEditableText extends StatefulWidget {
   _ZefyrEditableTextState createState() => _ZefyrEditableTextState();
 }
 
-class _ZefyrEditableTextState extends State<ZefyrEditableText>
-    with AutomaticKeepAliveClientMixin {
+class _ZefyrEditableTextState extends State<ZefyrEditableText> with AutomaticKeepAliveClientMixin {
   //
   // New public members
   //
@@ -112,8 +112,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
   /// keyboard become visible.
   void requestKeyboard() {
     if (_focusNode.hasFocus) {
-      _input.openConnection(
-          widget.controller.plainTextEditingValue, widget.keyboardAppearance);
+      _input.openConnection(widget.controller.plainTextEditingValue, widget.keyboardAppearance);
     } else {
       FocusScope.of(context).requestFocus(_focusNode);
     }
@@ -170,6 +169,8 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
   void initState() {
     _focusNode = widget.focusNode;
     super.initState();
+    _scrollOffset = _scrollController.offset;
+    _scrollController.addListener(_handleScroll);
     _focusAttachment = _focusNode.attach(context);
     _input = InputConnectionController(_handleRemoteValueChange);
     _updateSubscriptions();
@@ -223,6 +224,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
   //
 
   final ScrollController _scrollController = ScrollController();
+  double _scrollOffset;
   ZefyrRenderContext _renderContext;
   CursorTimer _cursorTimer;
   InputConnectionController _input;
@@ -284,14 +286,14 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
     _renderContext.removeListener(_handleRenderContextChange);
     widget.controller.removeListener(_handleLocalValueChange);
     _focusNode.removeListener(_handleFocusChange);
+    _scrollController.removeListener(_handleScroll);
     _input.closeConnection();
     _cursorTimer.stop();
   }
 
   // Triggered for both text and selection changes.
   void _handleLocalValueChange() {
-    if (widget.mode.canEdit &&
-        widget.controller.lastChangeSource == ChangeSource.local) {
+    if (widget.mode.canEdit && widget.controller.lastChangeSource == ChangeSource.local) {
       // Only request keyboard for user actions.
       requestKeyboard();
     }
@@ -303,21 +305,35 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
   }
 
   void _handleFocusChange() {
-    _input.openOrCloseConnection(_focusNode,
-        widget.controller.plainTextEditingValue, widget.keyboardAppearance);
+    _input.openOrCloseConnection(_focusNode, widget.controller.plainTextEditingValue, widget.keyboardAppearance);
     _cursorTimer.startOrStop(_focusNode, selection);
     updateKeepAlive();
   }
 
-  void _handleRemoteValueChange(
-      int start, String deleted, String inserted, TextSelection selection) {
-    widget.controller
-        .replaceText(start, deleted.length, inserted, selection: selection);
+  void _handleRemoteValueChange(int start, String deleted, String inserted, TextSelection selection) {
+    widget.controller.replaceText(start, deleted.length, inserted, selection: selection);
   }
 
   void _handleRenderContextChange() {
     setState(() {
       // nothing to update internally.
     });
+  }
+
+  void _handleScroll() {
+    ScrollDirection scrollDirection = _scrollController.position.userScrollDirection;
+    double currentOffset = _scrollController.offset;
+    double maxOffset = _scrollController.position.maxScrollExtent;
+
+    if (scrollDirection == ScrollDirection.idle && widget.controller.selection.isCollapsed) {
+      if (_scrollOffset >= maxOffset) {
+        // isAtEnd() ?
+        _scrollController.jumpTo(maxOffset);
+      } else {
+        _scrollController.jumpTo(_scrollOffset);
+      }
+    } else {
+      _scrollOffset = currentOffset;
+    }
   }
 }
