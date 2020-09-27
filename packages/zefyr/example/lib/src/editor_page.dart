@@ -61,9 +61,7 @@ class EditorPageState extends State<EditorPage> {
   Future<NotusDocument> _loadDocument() async {
     final file = File(Directory.systemTemp.path + "/quick_start.json");
     if (await file.exists()) {
-      final contents = await file
-          .readAsString()
-          .then((data) => Future.delayed(Duration(seconds: 1), () => data));
+      final contents = await file.readAsString().then((data) => Future.delayed(Duration(seconds: 1), () => data));
       return NotusDocument.fromJson(jsonDecode(contents));
     }
     final Delta delta = Delta()..insert("Zefyr Quick Start\n");
