@@ -20,6 +20,7 @@ class ZefyrEditor extends StatefulWidget {
     Key key,
     @required this.controller,
     @required this.focusNode,
+    this.scrollController,
     this.autofocus = true,
     this.mode = ZefyrMode.edit,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
@@ -32,6 +33,8 @@ class ZefyrEditor extends StatefulWidget {
         assert(controller != null),
         assert(focusNode != null),
         super(key: key);
+
+  final ScrollController scrollController;
 
   /// Controls the document being edited.
   final ZefyrController controller;
@@ -149,9 +152,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
     super.didChangeDependencies();
     final parentTheme = ZefyrTheme.of(context, nullOk: true);
     final fallbackTheme = ZefyrThemeData.fallback(context);
-    _themeData = (parentTheme != null)
-        ? fallbackTheme.merge(parentTheme)
-        : fallbackTheme;
+    _themeData = (parentTheme != null) ? fallbackTheme.merge(parentTheme) : fallbackTheme;
 
     if (_scope == null) {
       _scope = ZefyrScope.editable(
@@ -187,8 +188,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
   @override
   Widget build(BuildContext context) {
     final ThemeData themeData = Theme.of(context);
-    final Brightness keyboardAppearance =
-        widget.keyboardAppearance ?? themeData.primaryColorBrightness;
+    final Brightness keyboardAppearance = widget.keyboardAppearance ?? themeData.primaryColorBrightness;
 
     Widget editable = ZefyrEditableText(
       controller: _scope.controller,

@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:notus/notus.dart';
 
@@ -36,6 +35,7 @@ class ZefyrEditableText extends StatefulWidget {
     @required this.controller,
     @required this.focusNode,
     @required this.imageDelegate,
+    this.scrollController,
     this.selectionControls,
     this.autofocus = true,
     this.mode = ZefyrMode.edit,
@@ -47,6 +47,8 @@ class ZefyrEditableText extends StatefulWidget {
         assert(focusNode != null),
         assert(keyboardAppearance != null),
         super(key: key);
+
+  final ScrollController scrollController;
 
   /// Controls the document being edited.
   final ZefyrController controller;
@@ -169,8 +171,6 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText> with AutomaticKee
   void initState() {
     _focusNode = widget.focusNode;
     super.initState();
-    _scrollOffset = _scrollController.offset;
-    _scrollController.addListener(_handleScroll);
     _focusAttachment = _focusNode.attach(context);
     _input = InputConnectionController(_handleRemoteValueChange);
     _updateSubscriptions();
@@ -223,8 +223,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText> with AutomaticKee
   // Private members
   //
 
-  final ScrollController _scrollController = ScrollController();
-  double _scrollOffset;
+  ScrollController get _scrollController => widget.scrollController;
   ZefyrRenderContext _renderContext;
   CursorTimer _cursorTimer;
   InputConnectionController _input;
@@ -286,7 +285,6 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText> with AutomaticKee
     _renderContext.removeListener(_handleRenderContextChange);
     widget.controller.removeListener(_handleLocalValueChange);
     _focusNode.removeListener(_handleFocusChange);
-    _scrollController.removeListener(_handleScroll);
     _input.closeConnection();
     _cursorTimer.stop();
   }
@@ -318,22 +316,5 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText> with AutomaticKee
     setState(() {
       // nothing to update internally.
     });
-  }
-
-  void _handleScroll() {
-    ScrollDirection scrollDirection = _scrollController.position.userScrollDirection;
-    double currentOffset = _scrollController.offset;
-    double maxOffset = _scrollController.position.maxScrollExtent;
-
-    if (scrollDirection == ScrollDirection.idle && widget.controller.selection.isCollapsed) {
-      if (_scrollOffset >= maxOffset) {
-        // isAtEnd() ?
-        _scrollController.jumpTo(maxOffset);
-      } else {
-        _scrollController.jumpTo(_scrollOffset);
-      }
-    } else {
-      _scrollOffset = currentOffset;
-    }
   }
 }
